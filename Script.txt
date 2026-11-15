@@ -1,30 +1,51 @@
---// SukyWare V2 - Key System (Com Canais de Webhook Separados)
-local ValidKeys = {
-    "SUKY-7X9F1$", "SUKY-K4L8M#", "SUKY-Q2W5E%", "SUKY-9Z1X4&", "SUKY-R8T3Y*", 
-    "SUKY-5U2I7!", "SUKY-O6P9A#", "SUKY-1S4D8$", "SUKY-F3G6H%", "SUKY-7J2K5&",
-    "SUKY-L9Z1X#", "SUKY-4C7V2$", "SUKY-B5N8M%", "SUKY-3Q6W9&", "SUKY-8E1R4*", 
-    "SUKY-T2Y5U!", "SUKY-7I3O6#", "SUKY-9P2A4$", "SUKY-S5D8F%", "SUKY-1G6H3&",
-    "SUKY-4J7K2*", "SUKY-L9Z1X!", "SUKY-3C6V5#", "SUKY-8B2N7$", "SUKY-Q4W1E%", 
-    "SUKY-9R6T3&", "SUKY-5Y2U8*", "SUKY-I7O1P!", "SUKY-4A9S2#", "SUKY-D6F3G$",
-    "SUKY-8H1J5%", "SUKY-K2L7Z&", "SUKY-3X9C4*", "SUKY-V6B2N!", "SUKY-1M5Q8#", 
-    "SUKY-7W3E6$", "SUKY-9R2T4%", "SUKY-Y5U8I&", "SUKY-2O6P1*", "SUKY-A4S7D!",
-    "SUKY-3F9G2#", "SUKY-H6J1K$", "SUKY-8L4Z7%", "SUKY-X2C5V&", "SUKY-1B9N6*", 
-    "SUKY-Q3W8E!", "SUKY-R5T2Y#", "SUKY-7U4I1$", "SUKY-9O6P3%", "SUKY-A8S2D&",
-    "SUKY-F1G5H*", "SUKY-J7K4L!", "SUKY-2Z9X6#", "SUKY-C3V8B$", "SUKY-N1M5Q%", 
-    "SUKY-6W2E9&", "SUKY-R4T7Y*", "SUKY-U1I5O!", "SUKY-3P8A6#", "SUKY-S2D9F$",
-    "SUKY-G4H1J%", "SUKY-K6L3Z&", "SUKY-9X2C5*", "SUKY-V7B8N!", "SUKY-4M1Q3#", 
-    "SUKY-W6E2R$", "SUKY-T9Y4U%", "SUKY-I5O8P&", "SUKY-1A3S7*", "SUKY-D2F6G!",
-    "SUKY-H9J5K#", "SUKY-8L1Z4$", "SUKY-X6C2V%", "SUKY-3B7N9&", "SUKY-M1Q4W*", 
-    "SUKY-E8R2T!", "SUKY-5Y6U3#", "SUKY-O1P7A$", "SUKY-9S4D2%", "SUKY-F8G1H&",
-    "SUKY-3J6K5*", "SUKY-L2Z9X!", "SUKY-7C4V1#", "SUKY-B8N6M$", "SUKY-Q2W5E%", 
-    "SUKY-9R3T8&", "SUKY-1Y4U6*", "SUKY-I7O2P!", "SUKY-3A9S5#", "SUKY-D1F8G$",
-    "SUKY-Z4X7C#", "SUKY-V1B6N$", "SUKY-M8Q2W%", "SUKY-E5R9T&", "SUKY-Y3U1I*", 
-    "SUKY-O8P4A!", "SUKY-S6D2F#", "SUKY-G9H5J$", "SUKY-K1L8Z%", "SUKY-X3C9V&"
-}
+-- Bypass para o ofuscador web não crashar ao ler funções do Roblox
+if not game then return end
 
--- 🌐 CONFIGURAÇÃO DOS WEBHOOKS
-local WEBHOOK_LOGS_URL = "https://discord.com/api/webhooks/1566945840822620282/BZQMoK9vRA-y7VGG56cL-OFZAVHTPdaa9Ys5kY68n-_Ucs3fmzDmMz4K3a6eYfDOQl2K" -- Canal de logs gerais/segurança
-local WEBHOOK_KEYS_URL = "https://discord.com/api/webhooks/1566962003371626558/ztpJ08AimPYCewbxX5YRkBwPYtcO3Z41Z1JBtOTfRJNnpuW0m5sA9Is62_94WnSmv4B9" -- Canal de primeiro resgate de key
+local ValidKeys = {
+    -- Lote 1 (100 Keys)
+    "SUKY-7X9F1", "SUKY-K4L8M", "SUKY-Q2W5E", "SUKY-9Z1X4", "SUKY-R8T3Y", 
+    "SUKY-5U2I7", "SUKY-O6P9A", "SUKY-1S4D8", "SUKY-F3G6H", "SUKY-7J2K5",
+    "SUKY-L9Z1X", "SUKY-4C7V2", "SUKY-B5N8M", "SUKY-3Q6W9", "SUKY-8E1R4", 
+    "SUKY-T2Y5U", "SUKY-7I3O6", "SUKY-9P2A4", "SUKY-S5D8F", "SUKY-1G6H3",
+    "SUKY-4J7K2", "SUKY-L9Z1X", "SUKY-3C6V5", "SUKY-8B2N7", "SUKY-Q4W1E", 
+    "SUKY-9R6T3", "SUKY-5Y2U8", "SUKY-I7O1P", "SUKY-4A9S2", "SUKY-D6F3G",
+    "SUKY-8H1J5", "SUKY-K2L7Z", "SUKY-3X9C4", "SUKY-V6B2N", "SUKY-1M5Q8", 
+    "SUKY-7W3E6", "SUKY-9R2T4", "SUKY-Y5U8I", "SUKY-2O6P1", "SUKY-A4S7D",
+    "SUKY-3F9G2", "SUKY-H6J1K", "SUKY-8L4Z7", "SUKY-X2C5V", "SUKY-1B9N6", 
+    "SUKY-Q3W8E", "SUKY-R5T2Y", "SUKY-7U4I1", "SUKY-9O6P3", "SUKY-A8S2D",
+    "SUKY-F1G5H", "SUKY-J7K4L", "SUKY-2Z9X6", "SUKY-C3V8B", "SUKY-N1M5Q", 
+    "SUKY-6W2E9", "SUKY-R4T7Y", "SUKY-U1I5O", "SUKY-3P8A6", "SUKY-S2D9F",
+    "SUKY-G4H1J", "SUKY-K6L3Z", "SUKY-9X2C5", "SUKY-V7B8N", "SUKY-4M1Q3", 
+    "SUKY-W6E2R", "SUKY-T9Y4U", "SUKY-I5O8P", "SUKY-1A3S7", "SUKY-D2F6G",
+    "SUKY-H9J5K", "SUKY-8L1Z4", "SUKY-X6C2V", "SUKY-3B7N9", "SUKY-M1Q4W", 
+    "SUKY-E8R2T", "SUKY-5Y6U3", "SUKY-O1P7A", "SUKY-9S4D2", "SUKY-F8G1H",
+    "SUKY-3J6K5", "SUKY-L2Z9X", "SUKY-7C4V1", "SUKY-B8N6M", "SUKY-Q2W5E", 
+    "SUKY-9R3T8", "SUKY-1Y4U6", "SUKY-I7O2P", "SUKY-3A9S5", "SUKY-D1F8G",
+    "SUKY-Z4X7C", "SUKY-V1B6N", "SUKY-M8Q2W", "SUKY-E5R9T", "SUKY-Y3U1I", 
+    "SUKY-O8P4A", "SUKY-S6D2F", "SUKY-G9H5J", "SUKY-K1L8Z", "SUKY-X3C9V",
+
+    -- Lote 2 (100 Keys)
+    "SUKY-9M2Q5", "SUKY-W4E8R", "SUKY-T1Y6U", "SUKY-I3O5P", "SUKY-7A2S9", 
+    "SUKY-D4F1G", "SUKY-H8J3K", "SUKY-L5Z7X", "SUKY-C2V6B", "SUKY-N9M1Q",
+    "SUKY-4W7E2", "SUKY-R5T8Y", "SUKY-3I1O0", "SUKY-P6A4S", "SUKY-D7F2G", 
+    "SUKY-H1J9K", "SUKY-L4Z8X", "SUKY-C5V3B", "SUKY-N1M7Q", "SUKY-6W2E8",
+    "SUKY-R9T4Y", "SUKY-U5I2O", "SUKY-P1A7S", "SUKY-3D6F9", "SUKY-H2J4K", 
+    "SUKY-L8Z1X", "SUKY-C7V5B", "SUKY-N3M6Q", "SUKY-9W1E4", "SUKY-R2T7Y",
+    "SUKY-U6I3O", "SUKY-P8A2S", "SUKY-D1F5G", "SUKY-H9J7K", "SUKY-L2Z4X", 
+    "SUKY-C6V8B", "SUKY-N5M1Q", "SUKY-3W9E2", "SUKY-R7T1Y", "SUKY-U4I8O",
+    "SUKY-P2A6S", "SUKY-D9F3G", "SUKY-H5J1K", "SUKY-L7Z9X", "SUKY-C4V2B", 
+    "SUKY-N8M6Q", "SUKY-1W5E3", "SUKY-R4T2Y", "SUKY-U9I7O", "SUKY-3A1S5",
+    "SUKY-D8F6G", "SUKY-H2J9K", "SUKY-L4Z5X", "SUKY-C1V7B", "SUKY-N6M3Q", 
+    "SUKY-9W2E4", "SUKY-R8T5Y", "SUKY-U1I6O", "SUKY-P7A9S", "SUKY-D2F4G",
+    "SUKY-H3J1K", "SUKY-L5Z8X", "SUKY-C9V6B", "SUKY-N4M2Q", "SUKY-7W1E3", 
+    "SUKY-R6T9Y", "SUKY-U2I5O", "SUKY-P8A4S", "SUKY-D3F7G", "SUKY-H1J6K",
+    "SUKY-L9Z2X", "SUKY-C5V1B", "SUKY-N3M8Q", "SUKY-6W4E7", "SUKY-R2T9Y", 
+    "SUKY-U5I1O", "SUKY-P6A3S", "SUKY-D8F2G", "SUKY-H4J9K", "SUKY-L7Z1X",
+    "SUKY-C3V5B", "SUKY-N2M6Q", "SUKY-9W8E1", "SUKY-R4T7Y", "SUKY-U3I6O", 
+    "SUKY-P1A2S", "SUKY-D5F9G", "SUKY-H8J4K", "SUKY-L6Z2X", "SUKY-C7V3B",
+    "SUKY-2X4V6", "SUKY-8M3N1", "SUKY-Q9W5R", "SUKY-T7Y2U", "SUKY-I1O3P", 
+    "SUKY-A5S8D", "SUKY-F4G6H", "SUKY-J9K2L", "SUKY-Z1X3C", "SUKY-V5B7N"
+}
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -32,62 +53,6 @@ local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:FindFirstChild("PlayerGui") or CoreGui
 
--- Função genérica para disparar webhooks
-local function SendWebhook(url, dataTable)
-    if not url or url == "" then return end
-    local encoded = HttpService:JSONEncode(dataTable)
-    local requestFunc = syn and syn.request or http_request or request or HttpPost
-    if requestFunc then
-        pcall(function()
-            requestFunc({
-                Url = url,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = encoded
-            })
-        end)
-    end
-end
-
--- 1. Webhook de Logs de Segurança (Manda para o canal de logs gerais)
-local function SendSecurityLog(statusTitle, statusColor, descText, enteredKeyText)
-    local data = {
-        ["embeds"] = {{
-            ["title"] = statusTitle,
-            ["color"] = statusColor,
-            ["description"] = descText,
-            ["fields"] = {
-                {["name"] = "👤 Jogador", ["value"] = Player.Name .. " (" .. Player.DisplayName .. ")", ["inline"] = true},
-                {["name"] = "🆔 User ID", ["value"] = "[" .. Player.UserId .. "](https://www.roblox.com/users/" .. Player.UserId .. "/profile)", ["inline"] = true},
-                {["name"] = "🔑 Key Usada", ["value"] = "`" .. tostring(enteredKeyText) .. "`", ["inline"] = false}
-            },
-            ["footer"] = {["text"] = "SukyWare V2 • Key System Security"},
-            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
-        }}
-    }
-    SendWebhook(WEBHOOK_LOGS_URL, data)
-end
-
--- 2. Webhook do Canal Exclusivo (Dispara apenas no PRIMEIRO resgate da key)
-local function SendKeyRedemptionLog(enteredKeyText)
-    local data = {
-        ["embeds"] = {{
-            ["title"] = "🔑 Nova Key Resgatada!",
-            ["color"] = 3066993, -- Azul profissional/elegante
-            ["description"] = "Um usuário acabou de resgatar e ativar uma key pela primeira vez no **SukyWare V2**.",
-            ["fields"] = {
-                {["name"] = "🏷️ Key Utilizada", ["value"] = "`" .. tostring(enteredKeyText) .. "`", ["inline"] = false},
-                {["name"] = "👤 User (Roblox)", ["value"] = Player.Name .. " (" .. Player.DisplayName .. ")", ["inline"] = true},
-                {["name"] = "🆔 Id User", ["value"] = "[" .. Player.UserId .. "](https://www.roblox.com/users/" .. Player.UserId .. "/profile)", ["inline"] = true}
-            },
-            ["footer"] = {["text"] = "SukyWare V2 • Key System Redemptions"},
-            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
-        }}
-    }
-    SendWebhook(WEBHOOK_KEYS_URL, data)
-end
-
--- Remove instâncias antigas se já existirem para evitar duplicatas
 if PlayerGui:FindFirstChild("SukyWareKeySystem") then
     PlayerGui.SukyWareKeySystem:Destroy()
 end
@@ -97,7 +62,6 @@ ScreenGui.Name = "SukyWareKeySystem"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Janela Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -111,14 +75,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
--- Linha fina branca nas bordas
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(255, 255, 255)
-MainStroke.Transparency = 0.7
-MainStroke.Thickness = 1.2
-MainStroke.Parent = MainFrame
-
--- TopBar / Cabeçalho
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Parent = MainFrame
@@ -132,12 +88,11 @@ LogoLabel.BackgroundTransparency = 1
 LogoLabel.Position = UDim2.new(0, 15, 0, 0)
 LogoLabel.Size = UDim2.new(0, 200, 1, 0)
 LogoLabel.Font = Enum.Font.GothamBold
-LogoLabel.Text = "S  KEY SYSTEM"
+LogoLabel.Text = "KEY SYSTEM"
 LogoLabel.TextColor3 = Color3.fromRGB(0, 136, 255)
 LogoLabel.TextSize = 14
 LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Botão de Fechar
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Parent = TopBar
@@ -145,7 +100,7 @@ CloseButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 CloseButton.Position = UDim2.new(1, -35, 0.5, -12)
 CloseButton.Size = UDim2.new(0, 24, 0, 24)
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Text = "×"
+CloseButton.Text = "x"
 CloseButton.TextColor3 = Color3.fromRGB(220, 220, 220)
 CloseButton.TextSize = 16
 
@@ -153,17 +108,10 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseButton
 
-local CloseStroke = Instance.new("UIStroke")
-CloseStroke.Color = Color3.fromRGB(255, 255, 255)
-CloseStroke.Transparency = 0.8
-CloseStroke.Thickness = 1
-CloseStroke.Parent = CloseButton
-
 CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Textos de Boas-Vindas
 local WelcomeTitle = Instance.new("TextLabel")
 WelcomeTitle.Name = "WelcomeTitle"
 WelcomeTitle.Parent = MainFrame
@@ -183,12 +131,11 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.Position = UDim2.new(0, 20, 0, 67)
 HubTitle.Size = UDim2.new(1, -40, 0, 30)
 HubTitle.Font = Enum.Font.GothamBold
-HubTitle.Text = "SukyWare V2"
+HubTitle.Text = "SukyWare"
 HubTitle.TextColor3 = Color3.fromRGB(0, 140, 255)
 HubTitle.TextSize = 22
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- Label "Key"
 local KeyLabel = Instance.new("TextLabel")
 KeyLabel.Name = "KeyLabel"
 KeyLabel.Parent = MainFrame
@@ -196,12 +143,11 @@ KeyLabel.BackgroundTransparency = 1
 KeyLabel.Position = UDim2.new(0, 20, 0, 105)
 KeyLabel.Size = UDim2.new(1, -40, 0, 15)
 KeyLabel.Font = Enum.Font.Gotham
-KeyLabel.Text = "Key"
+KeyLabel.Text = "Chave"
 KeyLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 KeyLabel.TextSize = 12
 KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Caixa de Texto (TextBox)
 local KeyBox = Instance.new("TextBox")
 KeyBox.Name = "KeyBox"
 KeyBox.Parent = MainFrame
@@ -219,13 +165,6 @@ local BoxCorner = Instance.new("UICorner")
 BoxCorner.CornerRadius = UDim.new(0, 8)
 BoxCorner.Parent = KeyBox
 
-local BoxStroke = Instance.new("UIStroke")
-BoxStroke.Color = Color3.fromRGB(0, 136, 255)
-BoxStroke.Transparency = 0.5
-BoxStroke.Thickness = 1
-BoxStroke.Parent = KeyBox
-
--- Botão de Submeter Key
 local SubmitButton = Instance.new("TextButton")
 SubmitButton.Name = "SubmitButton"
 SubmitButton.Parent = MainFrame
@@ -241,7 +180,6 @@ local SubmitCorner = Instance.new("UICorner")
 SubmitCorner.CornerRadius = UDim.new(0, 8)
 SubmitCorner.Parent = SubmitButton
 
--- Rodapé / Discord
 local SupportLabel = Instance.new("TextButton")
 SupportLabel.Name = "SupportLabel"
 SupportLabel.Parent = MainFrame
@@ -254,13 +192,14 @@ SupportLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
 SupportLabel.TextSize = 12
 
 SupportLabel.MouseButton1Click:Connect(function()
-    setclipboard("https://discord.gg/8BSHpVSyCN")
-    SupportLabel.Text = "Link copiado para a área de transferência!"
+    if setclipboard then
+        setclipboard("https://discord.gg/8BSHpVSyCN")
+    end
+    SupportLabel.Text = "Link copiado!"
     task.wait(2)
     SupportLabel.Text = "Need support? Join the Discord"
 end)
 
--- Função de validação da Key na lista
 local function isKeyValid(input)
     for _, key in ipairs(ValidKeys) do
         if key == input then
@@ -270,9 +209,8 @@ local function isKeyValid(input)
     return false
 end
 
--- Sistema de Trava por ID (UserId Lock via Arquivo Local)
 local function verifyAndLockUserId(enteredKey)
-    local folderName = "SukyWareV2_Data"
+    local folderName = "SukyWare_Data"
     local fileName = folderName .. "/" .. enteredKey .. ".json"
     
     if makefolder and not isfolder(folderName) then
@@ -286,9 +224,9 @@ local function verifyAndLockUserId(enteredKey)
         
         if success and data and data.UserId then
             if data.UserId == Player.UserId then
-                return "Granted" -- Mesmo dono entrando de novo
+                return "Granted"
             else
-                return "LockedByAnother" -- Outro ID tentando usar
+                return "LockedByAnother"
             end
         end
     else
@@ -296,19 +234,17 @@ local function verifyAndLockUserId(enteredKey)
             pcall(function()
                 local saveData = {
                     UserId = Player.UserId,
-                    UserName = Player.Name,
-                    ActivationDate = os.date("%Y-%m-%d %H:%M:%S")
+                    UserName = Player.Name
                 }
                 writefile(fileName, HttpService:JSONEncode(saveData))
             end)
         end
-        return "GrantedFirstTime" -- Primeira ativação desta key
+        return "GrantedFirstTime"
     end
     
-    return "Error"
+    return "Granted"
 end
 
--- Ação do Botão Submit
 SubmitButton.MouseButton1Click:Connect(function()
     local enteredKey = KeyBox.Text
     
@@ -327,69 +263,28 @@ SubmitButton.MouseButton1Click:Connect(function()
         if lockStatus == "Granted" or lockStatus == "GrantedFirstTime" then
             SubmitButton.Text = "Key Correta!"
             SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-            
-            -- Dispara as mensagens no Discord
-            task.spawn(function()
-                -- 1. Sempre manda o log para o canal de logs gerais
-                SendSecurityLog(
-                    "✅ Acesso Concedido - SukyWare V2", 
-                    65280, 
-                    "O usuário ativou/entrou com sucesso utilizando uma Key válida.", 
-                    enteredKey
-                )
-                
-                -- 2. Se for a PRIMEIRA vez que essa key está sendo ativada (resgate), manda no canal de resgates
-                if lockStatus == "GrantedFirstTime" then
-                    SendKeyRedemptionLog(enteredKey)
-                end
-            end)
-            
-            -- Destroi a janela de key imediatamente
+            task.wait(0.5)
             ScreenGui:Destroy()
             
-            -- Executa o seu loadstring do GitHub
             task.spawn(function()
                 local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/SukyWare/Sukywarev1/refs/heads/main/Script.txt"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/SukyWare/sukywaredevv2/refs/heads/main/Script.txt"))()
                 end)
                 if not success then
-                    warn("Erro ao carregar o script principal: " .. tostring(err))
+                    warn("Erro ao carregar: " .. tostring(err))
                 end
             end)
             
         elseif lockStatus == "LockedByAnother" then
             SubmitButton.Text = "Key vinculada a outro ID!"
             SubmitButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-            
-            -- Envia log de tentativa de uso duplicado apenas para o canal de logs
-            task.spawn(function()
-                SendSecurityLog(
-                    "⛔ Tentativa de Uso Duplicado (Bloqueado)", 
-                    16711680, 
-                    "Este usuário tentou usar uma Key que já está trancada em outra conta do Roblox!", 
-                    enteredKey
-                )
-            end)
-            
             task.wait(2)
             SubmitButton.Text = "Submit Key >"
             SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
         end
-        
     else
         SubmitButton.Text = "Key Incorreta!"
         SubmitButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-        
-        -- Envia log de key inválida apenas para o canal de logs
-        task.spawn(function()
-            SendSecurityLog(
-                "❌ Key Inválida Tentada", 
-                16753920, 
-                "O usuário digitou uma chave que não existe na lista de keys válidas.", 
-                enteredKey
-            )
-        end)
-        
         task.wait(1.2)
         SubmitButton.Text = "Submit Key >"
         SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
