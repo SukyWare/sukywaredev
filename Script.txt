@@ -1,6 +1,16 @@
 -- Bypass para o ofuscador web não crashar ao ler funções do Roblox
 if not game then return end
 
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1574475890937827368/PwPaDm-Wg-3wlM9-uOVNlQkuc4mSle4e-TvyW4r8uX_FgImgjgjAeOQRNUFwYmDIWqTh"
+local DISCORD_INVITE = "https://discord.gg/8BSHpVSyCN"
+local GET_KEY_LINK = "https://discord.gg/8BSHpVSyCN" -- Troque pelo link do seu site/checkpoint/painel se quiser
+local SCRIPT_URL = "https://raw.githubusercontent.com/SukyWare/sukywaredevv2/refs/heads/main/Script.txt"
+
+-- Opcional: coloque aqui uma URL raw de JSON online (ex: GitHub/Pastebin/API) se quiser sincronizar binds/keys remotamente
+-- Formato esperado do JSON remoto:
+-- { "binds": { "SUKY-7X9F1": 123456789 }, "revoked": ["SUKY-..."] }
+local REMOTE_SYNC_URL = ""
+
 local ValidKeys = {
     -- Lote 1 (100 Keys)
     "SUKY-7X9F1", "SUKY-K4L8M", "SUKY-Q2W5E", "SUKY-9Z1X4", "SUKY-R8T3Y", 
@@ -47,9 +57,19 @@ local ValidKeys = {
     "SUKY-A5S8D", "SUKY-F4G6H", "SUKY-J9K2L", "SUKY-Z1X3C", "SUKY-V5B7N"
 }
 
+local ValidKeySet = {}
+for _, k in ipairs(ValidKeys) do
+    ValidKeySet[k] = true
+end
+
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
 local Player = Players.LocalPlayer
 local PlayerGui = Player:FindFirstChild("PlayerGui") or CoreGui
 
@@ -57,236 +77,824 @@ if PlayerGui:FindFirstChild("SukyWareKeySystem") then
     PlayerGui.SukyWareKeySystem:Destroy()
 end
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SukyWareKeySystem"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ========================
+-- UTILITÁRIOS E TELEMETRIA
+-- ========================
+local FOLDER_NAME = "SukyWare_Data"
+local KEYS_FOLDER = FOLDER_NAME .. "/Keys"
+local SESSION_FILE = FOLDER_NAME .. "/Session_" .. tostring(Player.UserId) .. ".json"
+local WEBHOOK_COOLDOWN = 8 -- segundos entre envios de webhook por tentativa repetida
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -135)
-MainFrame.Size = UDim2.new(0, 400, 0, 265)
-MainFrame.Active = true
-MainFrame.Draggable = true
+local lastWebhookSent = 0
+local lastWebhookSignature = ""
+local remoteData = { binds = {}, revoked = {} }
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
-
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Parent = MainFrame
-TopBar.BackgroundTransparency = 1
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-
-local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Name = "LogoLabel"
-LogoLabel.Parent = TopBar
-LogoLabel.BackgroundTransparency = 1
-LogoLabel.Position = UDim2.new(0, 15, 0, 0)
-LogoLabel.Size = UDim2.new(0, 200, 1, 0)
-LogoLabel.Font = Enum.Font.GothamBold
-LogoLabel.Text = "KEY SYSTEM"
-LogoLabel.TextColor3 = Color3.fromRGB(0, 136, 255)
-LogoLabel.TextSize = 14
-LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = TopBar
-CloseButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-CloseButton.Position = UDim2.new(1, -35, 0.5, -12)
-CloseButton.Size = UDim2.new(0, 24, 0, 24)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Text = "x"
-CloseButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-CloseButton.TextSize = 16
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
-
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
-local WelcomeTitle = Instance.new("TextLabel")
-WelcomeTitle.Name = "WelcomeTitle"
-WelcomeTitle.Parent = MainFrame
-WelcomeTitle.BackgroundTransparency = 1
-WelcomeTitle.Position = UDim2.new(0, 20, 0, 45)
-WelcomeTitle.Size = UDim2.new(1, -40, 0, 22)
-WelcomeTitle.Font = Enum.Font.GothamMedium
-WelcomeTitle.Text = "Welcome to the,"
-WelcomeTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-WelcomeTitle.TextSize = 15
-WelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local HubTitle = Instance.new("TextLabel")
-HubTitle.Name = "HubTitle"
-HubTitle.Parent = MainFrame
-HubTitle.BackgroundTransparency = 1
-HubTitle.Position = UDim2.new(0, 20, 0, 67)
-HubTitle.Size = UDim2.new(1, -40, 0, 30)
-HubTitle.Font = Enum.Font.GothamBold
-HubTitle.Text = "SukyWare"
-HubTitle.TextColor3 = Color3.fromRGB(0, 140, 255)
-HubTitle.TextSize = 22
-HubTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeyLabel = Instance.new("TextLabel")
-KeyLabel.Name = "KeyLabel"
-KeyLabel.Parent = MainFrame
-KeyLabel.BackgroundTransparency = 1
-KeyLabel.Position = UDim2.new(0, 20, 0, 105)
-KeyLabel.Size = UDim2.new(1, -40, 0, 15)
-KeyLabel.Font = Enum.Font.Gotham
-KeyLabel.Text = "Chave"
-KeyLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-KeyLabel.TextSize = 12
-KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeyBox = Instance.new("TextBox")
-KeyBox.Name = "KeyBox"
-KeyBox.Parent = MainFrame
-KeyBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-KeyBox.Position = UDim2.new(0, 20, 0, 123)
-KeyBox.Size = UDim2.new(1, -40, 0, 40)
-KeyBox.Font = Enum.Font.Gotham
-KeyBox.PlaceholderText = "insert your key here"
-KeyBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-KeyBox.Text = ""
-KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-KeyBox.TextSize = 13
-
-local BoxCorner = Instance.new("UICorner")
-BoxCorner.CornerRadius = UDim.new(0, 8)
-BoxCorner.Parent = KeyBox
-
-local SubmitButton = Instance.new("TextButton")
-SubmitButton.Name = "SubmitButton"
-SubmitButton.Parent = MainFrame
-SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-SubmitButton.Position = UDim2.new(0, 20, 0, 175)
-SubmitButton.Size = UDim2.new(1, -40, 0, 38)
-SubmitButton.Font = Enum.Font.GothamBold
-SubmitButton.Text = "Submit Key >"
-SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SubmitButton.TextSize = 14
-
-local SubmitCorner = Instance.new("UICorner")
-SubmitCorner.CornerRadius = UDim.new(0, 8)
-SubmitCorner.Parent = SubmitButton
-
-local SupportLabel = Instance.new("TextButton")
-SupportLabel.Name = "SupportLabel"
-SupportLabel.Parent = MainFrame
-SupportLabel.BackgroundTransparency = 1
-SupportLabel.Position = UDim2.new(0, 20, 0, 225)
-SupportLabel.Size = UDim2.new(1, -40, 0, 20)
-SupportLabel.Font = Enum.Font.Gotham
-SupportLabel.Text = "Need support? Join the Discord"
-SupportLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-SupportLabel.TextSize = 12
-
-SupportLabel.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard("https://discord.gg/8BSHpVSyCN")
+local function ensureFolders()
+    if makefolder then
+        pcall(function()
+            if not isfolder(FOLDER_NAME) then makefolder(FOLDER_NAME) end
+            if not isfolder(KEYS_FOLDER) then makefolder(KEYS_FOLDER) end
+        end)
     end
-    SupportLabel.Text = "Link copiado!"
-    task.wait(2)
-    SupportLabel.Text = "Need support? Join the Discord"
-end)
+end
 
-local function isKeyValid(input)
-    for _, key in ipairs(ValidKeys) do
-        if key == input then
+local function normalizeKey(raw)
+    if type(raw) ~= "string" then return "" end
+    local clean = raw:match("^%s*(.-)%s*$") or ""
+    return string.upper(clean)
+end
+
+local function getExecutorName()
+    if identifyexecutor then
+        local ok, name = pcall(identifyexecutor)
+        if ok and name and tostring(name) ~= "" then return tostring(name) end
+    end
+    if getexecutorname then
+        local ok, name = pcall(getexecutorname)
+        if ok and name and tostring(name) ~= "" then return tostring(name) end
+    end
+    return "Desconhecido"
+end
+
+local function getPlatformName()
+    if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+        return "Mobile / Touch"
+    elseif UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled then
+        return "Console / Gamepad"
+    end
+    return "PC / Desktop"
+end
+
+local function getGameName()
+    local ok, info = pcall(function()
+        return MarketplaceService:GetProductInfoAsync(game.PlaceId)
+    end)
+    if ok and info and info.Name then
+        return info.Name
+    end
+    return "PlaceId " .. tostring(game.PlaceId)
+end
+
+local function getAccountAgeDays()
+    return tonumber(Player.AccountAge) or 0
+end
+
+local function getPingMs()
+    local ok, ping = pcall(function()
+        return math.floor(Player:GetNetworkPing() * 1000)
+    end)
+    return ok and ping or 0
+end
+
+local function getFpsEstimate()
+    local dt = RunService.RenderStepped:Wait()
+    return dt > 0 and math.floor(1 / dt) or 60
+end
+
+local function fetchRemoteSync()
+    if REMOTE_SYNC_URL == "" then return end
+    pcall(function()
+        local raw = game:HttpGet(REMOTE_SYNC_URL)
+        local decoded = HttpService:JSONDecode(raw)
+        if type(decoded) == "table" then
+            if type(decoded.binds) == "table" then
+                remoteData.binds = decoded.binds
+            end
+            if type(decoded.revoked) == "table" then
+                remoteData.revoked = decoded.revoked
+            end
+        end
+    end)
+end
+
+local function isKeyRevoked(key)
+    for _, rev in ipairs(remoteData.revoked or {}) do
+        if normalizeKey(rev) == key then
             return true
         end
     end
     return false
 end
 
+local function sendWebhook(keyUsed, statusText, colorHex, extraInfo)
+    if not WEBHOOK_URL or WEBHOOK_URL == "" then return end
+
+    local signature = tostring(keyUsed) .. "|" .. tostring(statusText) .. "|" .. tostring(Player.UserId)
+    local now = os.clock()
+    if signature == lastWebhookSignature and (now - lastWebhookSent) < WEBHOOK_COOLDOWN then
+        return
+    end
+    lastWebhookSent = now
+    lastWebhookSignature = signature
+
+    local req = (syn and syn.request) or (http and http.request) or http_request or request
+    if not req then return end
+
+    local executor = getExecutorName()
+    local gameName = getGameName()
+    local platform = getPlatformName()
+    local ageDays = getAccountAgeDays()
+    local pingMs = getPingMs()
+    local fpsEst = getFpsEstimate()
+
+    local fields = {
+        {
+            name = "Key usada:",
+            value = "`" .. tostring(keyUsed) .. "`",
+            inline = true
+        },
+        {
+            name = "ID do usuário:",
+            value = "`" .. tostring(Player.UserId) .. "` (@" .. tostring(Player.Name) .. ")",
+            inline = true
+        },
+        {
+            name = "Status:",
+            value = tostring(statusText),
+            inline = true
+        },
+        {
+            name = "Executor:",
+            value = "`" .. executor .. "`",
+            inline = true
+        },
+        {
+            name = "Plataforma:",
+            value = "`" .. platform .. "`",
+            inline = true
+        },
+        {
+            name = "Idade da conta / Ping / FPS:",
+            value = "`" .. tostring(ageDays) .. "d` • `" .. tostring(pingMs) .. "ms` • `~" .. tostring(fpsEst) .. " FPS`",
+            inline = true
+        },
+        {
+            name = "Jogo:",
+            value = gameName .. " (`" .. tostring(game.PlaceId) .. "`)\nJobId: `" .. tostring(game.JobId) .. "`",
+            inline = false
+        }
+    }
+
+    if extraInfo and extraInfo ~= "" then
+        table.insert(fields, {
+            name = "Detalhes adicionais:",
+            value = tostring(extraInfo),
+            inline = false
+        })
+    end
+
+    local payload = {
+        embeds = {
+            {
+                title = "SukyWare • Key System Log",
+                color = colorHex or 3447003,
+                thumbnail = {
+                    url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(Player.UserId) .. "&width=150&height=150&format=png"
+                },
+                fields = fields,
+                footer = {
+                    text = "SukyWare Security • UserId Lock & Telemetry"
+                },
+                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+            }
+        }
+    }
+
+    pcall(function()
+        req({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+end
+
+-- ========================
+-- LOCK POR USERID & AUTO-SAVE
+-- ========================
+local function readKeyFile(key)
+    if not (isfile and readfile) then return nil end
+    local path = KEYS_FOLDER .. "/" .. key .. ".json"
+    if not isfile(path) then return nil end
+
+    local ok, raw = pcall(readfile, path)
+    if not ok or type(raw) ~= "string" then return nil end
+
+    local okJson, decoded = pcall(function()
+        return HttpService:JSONDecode(raw)
+    end)
+    if okJson and type(decoded) == "table" then
+        return decoded
+    end
+    return nil
+end
+
+local function writeKeyFile(key, dataTable)
+    if not writefile then return false end
+    ensureFolders()
+    local path = KEYS_FOLDER .. "/" .. key .. ".json"
+    local ok = pcall(function()
+        writefile(path, HttpService:JSONEncode(dataTable))
+    end)
+    return ok
+end
+
+local function saveAutoSession(key, autoLoginEnabled)
+    if not writefile then return end
+    ensureFolders()
+    pcall(function()
+        writefile(SESSION_FILE, HttpService:JSONEncode({
+            UserId = Player.UserId,
+            Key = key,
+            AutoLogin = autoLoginEnabled,
+            UpdatedAt = os.time()
+        }))
+    end)
+end
+
+local function loadAutoSession()
+    if not (isfile and readfile) then return nil end
+    if not isfile(SESSION_FILE) then return nil end
+    local ok, raw = pcall(readfile, SESSION_FILE)
+    if not ok or type(raw) ~= "string" then return nil end
+    local okJson, decoded = pcall(function()
+        return HttpService:JSONDecode(raw)
+    end)
+    if okJson and type(decoded) == "table" and tonumber(decoded.UserId) == Player.UserId then
+        return decoded
+    end
+    return nil
+end
+
+local function isKeyValid(input)
+    if isKeyRevoked(input) then return false, "Revoked" end
+    if ValidKeySet[input] then return true, "Valid" end
+    return false, "Invalid"
+end
+
 local function verifyAndLockUserId(enteredKey)
-    local folderName = "SukyWare_Data"
-    local fileName = folderName .. "/" .. enteredKey .. ".json"
-    
-    if makefolder and not isfolder(folderName) then
-        pcall(function() makefolder(folderName) end)
+    -- 1. Checa bind remoto se configurado
+    local remoteBoundId = remoteData.binds and remoteData.binds[enteredKey]
+    if remoteBoundId and tonumber(remoteBoundId) ~= Player.UserId then
+        return "LockedByAnother", tonumber(remoteBoundId)
     end
-    
-    if isfile and isfile(fileName) then
-        local success, data = pcall(function()
-            return HttpService:JSONDecode(readfile(fileName))
-        end)
-        
-        if success and data and data.UserId then
-            if data.UserId == Player.UserId then
-                return "Granted"
-            else
-                return "LockedByAnother"
+
+    -- 2. Checa bind local por key
+    local existing = readKeyFile(enteredKey)
+    if existing and existing.UserId then
+        local boundId = tonumber(existing.UserId)
+        if boundId == Player.UserId then
+            existing.LastUsed = os.time()
+            existing.Uses = (tonumber(existing.Uses) or 1) + 1
+            existing.UserName = Player.Name
+            writeKeyFile(enteredKey, existing)
+            return "Granted", boundId
+        else
+            return "LockedByAnother", boundId
+        end
+    end
+
+    -- 3. Vincula na primeira vez
+    local record = {
+        Key = enteredKey,
+        UserId = Player.UserId,
+        UserName = Player.Name,
+        FirstBound = os.time(),
+        LastUsed = os.time(),
+        Uses = 1,
+        Executor = getExecutorName()
+    }
+    writeKeyFile(enteredKey, record)
+    return "GrantedFirstTime", Player.UserId
+end
+
+-- ========================
+-- INTERFACE (UI MODERNA + ANIMAÇÕES)
+-- ========================
+local autoLoginEnabled = true
+local savedSession = loadAutoSession()
+if savedSession and type(savedSession.AutoLogin) == "boolean" then
+    autoLoginEnabled = savedSession.AutoLogin
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SukyWareKeySystem"
+ScreenGui.Parent = PlayerGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+local Backdrop = Instance.new("Frame")
+Backdrop.Name = "Backdrop"
+Backdrop.Parent = ScreenGui
+Backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Backdrop.BackgroundTransparency = 1
+Backdrop.Size = UDim2.new(1, 0, 1, 0)
+Backdrop.BorderSizePixel = 0
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(16, 17, 23)
+MainFrame.Position = UDim2.new(0.5, 0, 0.54, 0)
+MainFrame.Size = UDim2.new(0, 430, 0, 325)
+MainFrame.ClipsDescendants = true
+MainFrame.BorderSizePixel = 0
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Parent = MainFrame
+MainStroke.Color = Color3.fromRGB(0, 136, 255)
+MainStroke.Thickness = 1.2
+MainStroke.Transparency = 0.55
+
+local MainGradient = Instance.new("UIGradient")
+MainGradient.Parent = MainFrame
+MainGradient.Rotation = 135
+MainGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 22, 31)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 14, 19))
+})
+
+-- Arrastar janela suave via InputBegan/InputChanged
+local dragging = false
+local dragInput, dragStart, startPos
+
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Parent = MainFrame
+TopBar.BackgroundTransparency = 1
+TopBar.Size = UDim2.new(1, 0, 0, 50)
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-        end
-    else
-        if writefile then
-            pcall(function()
-                local saveData = {
-                    UserId = Player.UserId,
-                    UserName = Player.Name
-                }
-                writefile(fileName, HttpService:JSONEncode(saveData))
-            end)
-        end
-        return "GrantedFirstTime"
+        end)
     end
-    
-    return "Granted"
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+local LogoLabel = Instance.new("TextLabel")
+LogoLabel.Name = "LogoLabel"
+LogoLabel.Parent = TopBar
+LogoLabel.BackgroundTransparency = 1
+LogoLabel.Position = UDim2.new(0, 18, 0, 0)
+LogoLabel.Size = UDim2.new(0, 220, 1, 0)
+LogoLabel.Font = Enum.Font.GothamBold
+LogoLabel.Text = "SUKYWARE • KEY SYSTEM"
+LogoLabel.TextColor3 = Color3.fromRGB(0, 145, 255)
+LogoLabel.TextSize = 13
+LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = TopBar
+CloseButton.BackgroundColor3 = Color3.fromRGB(32, 34, 45)
+CloseButton.Position = UDim2.new(1, -42, 0.5, -13)
+CloseButton.Size = UDim2.new(0, 26, 0, 26)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Text = "×"
+CloseButton.TextColor3 = Color3.fromRGB(225, 225, 235)
+CloseButton.TextSize = 18
+CloseButton.AutoButtonColor = false
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 7)
+CloseCorner.Parent = CloseButton
+
+-- Cartão de perfil do jogador (Avatar + Nome + ID)
+local ProfileCard = Instance.new("Frame")
+ProfileCard.Name = "ProfileCard"
+ProfileCard.Parent = MainFrame
+ProfileCard.BackgroundColor3 = Color3.fromRGB(24, 26, 36)
+ProfileCard.Position = UDim2.new(0, 18, 0, 52)
+ProfileCard.Size = UDim2.new(1, -36, 0, 54)
+ProfileCard.BorderSizePixel = 0
+
+local ProfileCorner = Instance.new("UICorner")
+ProfileCorner.CornerRadius = UDim.new(0, 10)
+ProfileCorner.Parent = ProfileCard
+
+local ProfileStroke = Instance.new("UIStroke")
+ProfileStroke.Parent = ProfileCard
+ProfileStroke.Color = Color3.fromRGB(55, 60, 80)
+ProfileStroke.Thickness = 1
+
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Name = "AvatarImage"
+AvatarImage.Parent = ProfileCard
+AvatarImage.BackgroundColor3 = Color3.fromRGB(35, 38, 52)
+AvatarImage.Position = UDim2.new(0, 10, 0.5, -18)
+AvatarImage.Size = UDim2.new(0, 36, 0, 36)
+AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(Player.UserId) .. "&width=150&height=150&format=png"
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1, 0)
+AvatarCorner.Parent = AvatarImage
+
+local PlayerDisplayLabel = Instance.new("TextLabel")
+PlayerDisplayLabel.Name = "PlayerDisplayLabel"
+PlayerDisplayLabel.Parent = ProfileCard
+PlayerDisplayLabel.BackgroundTransparency = 1
+PlayerDisplayLabel.Position = UDim2.new(0, 54, 0, 8)
+PlayerDisplayLabel.Size = UDim2.new(1, -140, 0, 18)
+PlayerDisplayLabel.Font = Enum.Font.GothamBold
+PlayerDisplayLabel.Text = Player.DisplayName .. " (@" .. Player.Name .. ")"
+PlayerDisplayLabel.TextColor3 = Color3.fromRGB(240, 242, 250)
+PlayerDisplayLabel.TextSize = 13
+PlayerDisplayLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerDisplayLabel.TextTruncate = Enum.TextTruncate.AtEnd
+
+local PlayerIdLabel = Instance.new("TextLabel")
+PlayerIdLabel.Name = "PlayerIdLabel"
+PlayerIdLabel.Parent = ProfileCard
+PlayerIdLabel.BackgroundTransparency = 1
+PlayerIdLabel.Position = UDim2.new(0, 54, 0, 26)
+PlayerIdLabel.Size = UDim2.new(1, -140, 0, 18)
+PlayerIdLabel.Font = Enum.Font.Gotham
+PlayerIdLabel.Text = "UserId: " .. tostring(Player.UserId) .. " • Lock Ativo"
+PlayerIdLabel.TextColor3 = Color3.fromRGB(130, 180, 255)
+PlayerIdLabel.TextSize = 11
+PlayerIdLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local ExecutorBadge = Instance.new("TextLabel")
+ExecutorBadge.Name = "ExecutorBadge"
+ExecutorBadge.Parent = ProfileCard
+ExecutorBadge.BackgroundColor3 = Color3.fromRGB(15, 35, 60)
+ExecutorBadge.Position = UDim2.new(1, -118, 0.5, -11)
+ExecutorBadge.Size = UDim2.new(0, 108, 0, 22)
+ExecutorBadge.Font = Enum.Font.GothamBold
+ExecutorBadge.Text = getExecutorName()
+ExecutorBadge.TextColor3 = Color3.fromRGB(70, 175, 255)
+ExecutorBadge.TextSize = 10
+ExecutorBadge.TextTruncate = Enum.TextTruncate.AtEnd
+
+local BadgeCorner = Instance.new("UICorner")
+BadgeCorner.CornerRadius = UDim.new(0, 6)
+BadgeCorner.Parent = ExecutorBadge
+
+-- Input da Key
+local KeyLabel = Instance.new("TextLabel")
+KeyLabel.Name = "KeyLabel"
+KeyLabel.Parent = MainFrame
+KeyLabel.BackgroundTransparency = 1
+KeyLabel.Position = UDim2.new(0, 18, 0, 114)
+KeyLabel.Size = UDim2.new(1, -36, 0, 16)
+KeyLabel.Font = Enum.Font.GothamMedium
+KeyLabel.Text = "Chave de acesso (vinculada ao seu UserId)"
+KeyLabel.TextColor3 = Color3.fromRGB(165, 170, 185)
+KeyLabel.TextSize = 11
+KeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local KeyBox = Instance.new("TextBox")
+KeyBox.Name = "KeyBox"
+KeyBox.Parent = MainFrame
+KeyBox.BackgroundColor3 = Color3.fromRGB(24, 26, 36)
+KeyBox.Position = UDim2.new(0, 18, 0, 134)
+KeyBox.Size = UDim2.new(1, -36, 0, 40)
+KeyBox.Font = Enum.Font.GothamMedium
+KeyBox.PlaceholderText = "Ex: SUKY-7X9F1 (pressione Enter ou clique em Submit)"
+KeyBox.PlaceholderColor3 = Color3.fromRGB(105, 110, 128)
+KeyBox.Text = (savedSession and savedSession.Key) or ""
+KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyBox.TextSize = 13
+KeyBox.ClearTextOnFocus = false
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 9)
+BoxCorner.Parent = KeyBox
+
+local BoxStroke = Instance.new("UIStroke")
+BoxStroke.Parent = KeyBox
+BoxStroke.Color = Color3.fromRGB(50, 56, 75)
+BoxStroke.Thickness = 1
+
+-- Toggle Auto-Save / Auto-Login
+local AutoSaveBtn = Instance.new("TextButton")
+AutoSaveBtn.Name = "AutoSaveBtn"
+AutoSaveBtn.Parent = MainFrame
+AutoSaveBtn.BackgroundColor3 = Color3.fromRGB(24, 26, 36)
+AutoSaveBtn.Position = UDim2.new(0, 18, 0, 182)
+AutoSaveBtn.Size = UDim2.new(1, -36, 0, 26)
+AutoSaveBtn.Font = Enum.Font.GothamMedium
+AutoSaveBtn.Text = autoLoginEnabled and "✓  Auto-Salvar & Auto-Login: ATIVADO" or "✕  Auto-Salvar & Auto-Login: DESATIVADO"
+AutoSaveBtn.TextColor3 = autoLoginEnabled and Color3.fromRGB(80, 220, 140) or Color3.fromRGB(160, 165, 180)
+AutoSaveBtn.TextSize = 11
+AutoSaveBtn.TextXAlignment = Enum.TextXAlignment.Left
+AutoSaveBtn.AutoButtonColor = false
+
+local AutoSaveCorner = Instance.new("UICorner")
+AutoSaveCorner.CornerRadius = UDim.new(0, 7)
+AutoSaveCorner.Parent = AutoSaveBtn
+
+local AutoSavePad = Instance.new("UIPadding")
+AutoSavePad.Parent = AutoSaveBtn
+AutoSavePad.PaddingLeft = UDim.new(0, 10)
+
+-- Botões principais: Submit + Get Key + Discord
+local SubmitButton = Instance.new("TextButton")
+SubmitButton.Name = "SubmitButton"
+SubmitButton.Parent = MainFrame
+SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 125, 255)
+SubmitButton.Position = UDim2.new(0, 18, 0, 216)
+SubmitButton.Size = UDim2.new(1, -36, 0, 40)
+SubmitButton.Font = Enum.Font.GothamBold
+SubmitButton.Text = "Submit Key  >"
+SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitButton.TextSize = 14
+SubmitButton.AutoButtonColor = false
+
+local SubmitCorner = Instance.new("UICorner")
+SubmitCorner.CornerRadius = UDim.new(0, 9)
+SubmitCorner.Parent = SubmitButton
+
+local GetKeyButton = Instance.new("TextButton")
+GetKeyButton.Name = "GetKeyButton"
+GetKeyButton.Parent = MainFrame
+GetKeyButton.BackgroundColor3 = Color3.fromRGB(28, 32, 46)
+GetKeyButton.Position = UDim2.new(0, 18, 0, 265)
+GetKeyButton.Size = UDim2.new(0.48, -22, 0, 34)
+GetKeyButton.Font = Enum.Font.GothamBold
+GetKeyButton.Text = "Get Key (Copiar Link)"
+GetKeyButton.TextColor3 = Color3.fromRGB(215, 225, 245)
+GetKeyButton.TextSize = 12
+GetKeyButton.AutoButtonColor = false
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.CornerRadius = UDim.new(0, 8)
+GetKeyCorner.Parent = GetKeyButton
+
+local DiscordButton = Instance.new("TextButton")
+DiscordButton.Name = "DiscordButton"
+DiscordButton.Parent = MainFrame
+DiscordButton.BackgroundColor3 = Color3.fromRGB(45, 52, 85)
+DiscordButton.Position = UDim2.new(0.52, 4, 0, 265)
+DiscordButton.Size = UDim2.new(0.48, -22, 0, 34)
+DiscordButton.Font = Enum.Font.GothamBold
+DiscordButton.Text = "Discord Suporte"
+DiscordButton.TextColor3 = Color3.fromRGB(235, 240, 255)
+DiscordButton.TextSize = 12
+DiscordButton.AutoButtonColor = false
+
+local DiscordCorner = Instance.new("UICorner")
+DiscordCorner.CornerRadius = UDim.new(0, 8)
+DiscordCorner.Parent = DiscordButton
+
+-- ========================
+-- ANIMAÇÕES E ESTADOS VISUAIS
+-- ========================
+local function tween(obj, info, props)
+    local t = TweenService:Create(obj, info, props)
+    t:Play()
+    return t
+end
+
+local btnInfo = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+SubmitButton.MouseEnter:Connect(function()
+    if SubmitButton.Text == "Submit Key  >" then
+        tween(SubmitButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(20, 145, 255) })
+    end
+end)
+SubmitButton.MouseLeave:Connect(function()
+    if SubmitButton.Text == "Submit Key  >" then
+        tween(SubmitButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(0, 125, 255) })
+    end
+end)
+
+GetKeyButton.MouseEnter:Connect(function()
+    tween(GetKeyButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(38, 44, 62) })
+end)
+GetKeyButton.MouseLeave:Connect(function()
+    tween(GetKeyButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(28, 32, 46) })
+end)
+
+DiscordButton.MouseEnter:Connect(function()
+    tween(DiscordButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(60, 70, 112) })
+end)
+DiscordButton.MouseLeave:Connect(function()
+    tween(DiscordButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(45, 52, 85) })
+end)
+
+CloseButton.MouseEnter:Connect(function()
+    tween(CloseButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(200, 55, 65) })
+end)
+CloseButton.MouseLeave:Connect(function()
+    tween(CloseButton, btnInfo, { BackgroundColor3 = Color3.fromRGB(32, 34, 45) })
+end)
+
+KeyBox.Focused:Connect(function()
+    tween(BoxStroke, btnInfo, { Color = Color3.fromRGB(0, 145, 255) })
+end)
+KeyBox.FocusLost:Connect(function()
+    tween(BoxStroke, btnInfo, { Color = Color3.fromRGB(50, 56, 75) })
+end)
+
+local isClosing = false
+local function closeGui()
+    if isClosing then return end
+    isClosing = true
+    tween(Backdrop, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+    local outTween = tween(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Position = UDim2.new(0.5, 0, 0.56, 0),
+        Size = UDim2.new(0, 390, 0, 290)
+    })
+    outTween.Completed:Wait()
+    ScreenGui:Destroy()
+end
+
+CloseButton.MouseButton1Click:Connect(closeGui)
+
+AutoSaveBtn.MouseButton1Click:Connect(function()
+    autoLoginEnabled = not autoLoginEnabled
+    if autoLoginEnabled then
+        AutoSaveBtn.Text = "✓  Auto-Salvar & Auto-Login: ATIVADO"
+        AutoSaveBtn.TextColor3 = Color3.fromRGB(80, 220, 140)
+    else
+        AutoSaveBtn.Text = "✕  Auto-Salvar & Auto-Login: DESATIVADO"
+        AutoSaveBtn.TextColor3 = Color3.fromRGB(160, 165, 180)
+    end
+    local currentKey = normalizeKey(KeyBox.Text)
+    saveAutoSession(currentKey, autoLoginEnabled)
+end)
+
+GetKeyButton.MouseButton1Click:Connect(function()
+    if setclipboard then
+        pcall(setclipboard, GET_KEY_LINK)
+    end
+    local old = GetKeyButton.Text
+    GetKeyButton.Text = "Link Copiado!"
+    task.wait(1.5)
+    GetKeyButton.Text = old
+end)
+
+DiscordButton.MouseButton1Click:Connect(function()
+    if setclipboard then
+        pcall(setclipboard, DISCORD_INVITE)
+    end
+    local old = DiscordButton.Text
+    DiscordButton.Text = "Invite Copiado!"
+    task.wait(1.5)
+    DiscordButton.Text = old
+end)
+
+-- ========================
+-- EXECUÇÃO DO SCRIPT PRINCIPAL
+-- ========================
+local hasLoadedMain = false
+local function launchMainScript()
+    if hasLoadedMain then return end
+    hasLoadedMain = true
+
+    task.spawn(function()
+        local ok, err = pcall(function()
+            local source = game:HttpGet(SCRIPT_URL)
+            local fn = loadstring(source)
+            if type(fn) == "function" then
+                fn()
+            else
+                error("Conteúdo do Script.txt inválido ou vazio.")
+            end
+        end)
+        if not ok then
+            warn("[SukyWare] Erro ao carregar Script.txt: " .. tostring(err))
+        end
+    end)
+end
+
+local isSubmitting = false
+local function setButtonFeedback(text, color, duration)
+    SubmitButton.Text = text
+    SubmitButton.BackgroundColor3 = color
+    task.wait(duration or 1.3)
+    SubmitButton.Text = "Submit Key  >"
+    SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 125, 255)
+end
+
+local function processKey(rawInput, isAutoAttempt)
+    if isSubmitting then return end
+    isSubmitting = true
+
+    local enteredKey = normalizeKey(rawInput)
+    KeyBox.Text = enteredKey
+
+    if enteredKey == "" then
+        setButtonFeedback("Digite uma Key!", Color3.fromRGB(220, 150, 50), 1.2)
+        isSubmitting = false
+        return
+    end
+
+    local valid, reason = isKeyValid(enteredKey)
+    if not valid then
+        local statusMsg = (reason == "Revoked") and "Key revogada / bloqueada" or "Tentativa com key inválida"
+        task.spawn(function()
+            sendWebhook(enteredKey, statusMsg, 15105570, isAutoAttempt and "Tentativa via Auto-Login" or nil)
+        end)
+        setButtonFeedback(reason == "Revoked" and "Key Revogada!" or "Key Incorreta!", Color3.fromRGB(220, 55, 65), 1.3)
+        isSubmitting = false
+        return
+    end
+
+    local lockStatus, boundUserId = verifyAndLockUserId(enteredKey)
+
+    if lockStatus == "GrantedFirstTime" then
+        if autoLoginEnabled then
+            saveAutoSession(enteredKey, true)
+        end
+        task.spawn(function()
+            sendWebhook(enteredKey, "Vinculada ao UserId e liberada (1º uso)", 3066993)
+        end)
+        SubmitButton.Text = "Key Vinculada & Liberada!"
+        SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 195, 105)
+        task.wait(0.6)
+        closeGui()
+        launchMainScript()
+
+    elseif lockStatus == "Granted" then
+        if autoLoginEnabled then
+            saveAutoSession(enteredKey, true)
+        end
+        task.spawn(function()
+            sendWebhook(
+                enteredKey,
+                isAutoAttempt and "Acesso liberado via Auto-Login" or "Acesso liberado (UserId confirmado)",
+                3447003
+            )
+        end)
+        SubmitButton.Text = "Acesso Liberado!"
+        SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 195, 105)
+        task.wait(0.5)
+        closeGui()
+        launchMainScript()
+
+    elseif lockStatus == "LockedByAnother" then
+        task.spawn(function()
+            sendWebhook(
+                enteredKey,
+                "Bloqueada — pertence a outro UserId",
+                15158332,
+                "Dono original UserId: `" .. tostring(boundUserId) .. "`"
+            )
+        end)
+        setButtonFeedback("Key vinculada a outro ID!", Color3.fromRGB(220, 55, 65), 2)
+        isSubmitting = false
+    else
+        isSubmitting = false
+    end
 end
 
 SubmitButton.MouseButton1Click:Connect(function()
-    local enteredKey = KeyBox.Text
-    
-    if enteredKey == "" then
-        SubmitButton.Text = "Digite uma Key!"
-        SubmitButton.BackgroundColor3 = Color3.fromRGB(220, 150, 50)
-        task.wait(1.2)
-        SubmitButton.Text = "Submit Key >"
-        SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-        return
+    processKey(KeyBox.Text, false)
+end)
+
+KeyBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        processKey(KeyBox.Text, false)
     end
-    
-    if isKeyValid(enteredKey) then
-        local lockStatus = verifyAndLockUserId(enteredKey)
-        
-        if lockStatus == "Granted" or lockStatus == "GrantedFirstTime" then
-            SubmitButton.Text = "Key Correta!"
-            SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-            task.wait(0.5)
-            ScreenGui:Destroy()
-            
-            task.spawn(function()
-                local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/SukyWare/sukywaredevv2/refs/heads/main/Script.txt"))()
-                end)
-                if not success then
-                    warn("Erro ao carregar: " .. tostring(err))
-                end
-            end)
-            
-        elseif lockStatus == "LockedByAnother" then
-            SubmitButton.Text = "Key vinculada a outro ID!"
-            SubmitButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-            task.wait(2)
-            SubmitButton.Text = "Submit Key >"
-            SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+end)
+
+-- Animação de entrada da janela
+tween(Backdrop, TweenInfo.new(0.25), { BackgroundTransparency = 0.45 })
+tween(MainFrame, TweenInfo.new(0.32, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    Position = UDim2.new(0.5, 0, 0.5, 0)
+})
+
+-- Sincronização remota opcional + Auto-Login se salvo
+task.spawn(function()
+    fetchRemoteSync()
+    if autoLoginEnabled and savedSession and savedSession.Key and normalizeKey(savedSession.Key) ~= "" then
+        task.wait(0.35)
+        if not hasLoadedMain and ScreenGui.Parent then
+            processKey(savedSession.Key, true)
         end
-    else
-        SubmitButton.Text = "Key Incorreta!"
-        SubmitButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-        task.wait(1.2)
-        SubmitButton.Text = "Submit Key >"
-        SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
     end
 end)
